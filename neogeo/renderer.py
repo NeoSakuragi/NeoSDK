@@ -84,7 +84,7 @@ def render_sdef_indexed(spr_data, sdef):
     return img
 
 
-def render_frame(spr_data, parts, body_pal, acc_pal=None, scale=2):
+def render_frame(spr_data, parts, body_pal, acc_pal=None, scale=2, return_origin=False):
     """Render a composite frame from multiple sprite parts.
 
     Uses body_pal for the largest part (body) and acc_pal for smaller
@@ -92,6 +92,10 @@ def render_frame(spr_data, parts, body_pal, acc_pal=None, scale=2):
     If acc_pal is None, body_pal is used for all parts.
 
     parts: list of (y_off, x_off, sdef) tuples from the fragment chain.
+
+    If return_origin=True, returns (image, origin_x, origin_y) where
+    origin is where game coordinate (0,0) maps on the canvas.
+    This is needed for consistent Aseprite positioning.
     """
     if acc_pal is None:
         acc_pal = body_pal
@@ -120,7 +124,11 @@ def render_frame(spr_data, parts, body_pal, acc_pal=None, scale=2):
     w = max_x - min_x
     h = max_y - min_y
     if w <= 0 or h <= 0 or w > 512 or h > 512:
-        return None
+        return (None, 0, 0) if return_origin else None
+
+    # Origin (game coordinate 0,0) position on canvas
+    origin_x = (-min_x) * scale
+    origin_y = (-min_y) * scale
 
     canvas = np.zeros((h * scale, w * scale, 4), dtype=np.uint8)
     for y_off, x_off, part_img in rendered_parts:
@@ -138,7 +146,9 @@ def render_frame(spr_data, parts, body_pal, acc_pal=None, scale=2):
                                 canvas[ty, tx] = part_img[sy, sx]
 
     if not canvas[:, :, 3].any():
-        return None
+        return (None, 0, 0) if return_origin else None
+    if return_origin:
+        return canvas, origin_x, origin_y
     return canvas
 
 

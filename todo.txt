@@ -1,0 +1,17 @@
+KOF95 extraction TODO
+=====================
+
+1. Heidern state_161: some frames look visually wrong — may need a special
+   palette variant (V2/V3) for special move effects (energy, afterimage).
+   Investigate which palette the game uses for these states.
+
+2. Characters 26-29 (Omega Rugal, Nakoruru, Edit Team 1, Edit Team 2):
+   palettes are currently shared/borrowed from other characters.
+   These contain mostly projectiles, background animated elements, etc.
+   Need to define proper palettes for their atlases.
+
+3. Walk_fwd hotspot fix needs full re-extraction and verification
+   across all characters.
+
+4. KOF94 palettes: not yet mapped from ROM. Same process as KOF95
+   needed (find palette table, map V0/V1/V16 per character).

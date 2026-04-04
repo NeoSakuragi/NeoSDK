@@ -159,12 +159,13 @@ def extract_game(config, char_filter=None, do_aseprite=True, do_png=True):
         if not all_frames:
             continue
 
-        # Render all frames with P1 palette
+        # Render all frames with P1 palette (with origin info for Aseprite)
         rendered = []
         for state_id, duration, parts, loops in all_frames:
-            img = render_frame(spr_data, parts, p1_body, p1_acc)
-            if img is not None:
-                rendered.append((state_id, duration, img, parts, loops))
+            result = render_frame(spr_data, parts, p1_body, p1_acc, return_origin=True)
+            if result[0] is not None:
+                img, orig_x, orig_y = result
+                rendered.append((state_id, duration, img, parts, loops, orig_x, orig_y))
 
         if not rendered:
             continue
@@ -175,7 +176,7 @@ def extract_game(config, char_filter=None, do_aseprite=True, do_png=True):
 
         # ── PNG Atlas ──
         if do_png:
-            all_imgs = [img for _, _, img, _, _ in rendered]
+            all_imgs = [img for _, _, img, _, _, _, _ in rendered]
             cols_atlas = min(10, len(all_imgs))
             rows_atlas = (len(all_imgs) + cols_atlas - 1) // cols_atlas
             max_fw = max(im.shape[1] for im in all_imgs)
@@ -192,7 +193,7 @@ def extract_game(config, char_filter=None, do_aseprite=True, do_png=True):
             # P2 alt atlas
             if p2_body != p1_body or p2_acc != p1_acc:
                 imgs2 = []
-                for _, _, _, parts, _ in rendered:
+                for _, _, _, parts, _, _, _ in rendered:
                     img2 = render_frame(spr_data, parts, p2_body, p2_acc)
                     if img2 is not None:
                         imgs2.append(img2)
@@ -208,40 +209,47 @@ def extract_game(config, char_filter=None, do_aseprite=True, do_png=True):
 
         # ── Aseprite files (per state) ──
         if do_aseprite:
-            # Group frames by state
+            # Group frames by state, including origin offsets
             by_state = defaultdict(list)
-            for state_id, duration, img, parts, loops in rendered:
+            for state_id, duration, img, parts, loops, orig_x, orig_y in rendered:
                 duration_ms = max(16, int(duration * 1000 / 60))
-                by_state[state_id].append((duration_ms, img, loops))
+                by_state[state_id].append((duration_ms, img, loops, orig_x, orig_y))
 
-            # Global bounding box for consistent canvas across all states
-            g_min_y = g_min_x = 0
-            g_max_y = g_max_x = 0
-            for _, _, img, _, _ in rendered:
-                g_max_y = max(g_max_y, img.shape[0])
-                g_max_x = max(g_max_x, img.shape[1])
-            canvas_w = g_max_x
-            canvas_h = g_max_y
+            # Global canvas: find max extent from origin across ALL frames
+            # This ensures the character's feet stay at a fixed position
+            max_above = max_below = max_left = max_right = 0
+            for _, _, img, _, _, ox, oy in rendered:
+                h, w = img.shape[:2]
+                max_above = max(max_above, oy)           # pixels above origin
+                max_below = max(max_below, h - oy)       # pixels below origin
+                max_left = max(max_left, ox)              # pixels left of origin
+                max_right = max(max_right, w - ox)        # pixels right of origin
+            canvas_w = max_left + max_right
+            canvas_h = max_above + max_below
+            # Origin on canvas: (max_left, max_above)
+            anchor_x = max_left
+            anchor_y = max_above
 
             for state_id, frame_list in sorted(by_state.items()):
                 sname = state_names.get(str(state_id), f"state_{state_id:03d}")
                 n_frames = len(frame_list)
-                loop_dir = 0  # forward
+                loop_dir = 0
 
-                # Metadata chunks (frame 0 only)
                 meta = [make_color_profile_chunk(), make_palette_chunk(p1_body)]
                 meta.append(make_layer_chunk("Sprite"))
                 meta.append(make_tags_chunk([(sname, 0, n_frames - 1, loop_dir)]))
 
                 all_frame_data = []
-                for fi, (dur_ms, img, loops) in enumerate(frame_list):
+                for fi, (dur_ms, img, loops, orig_x, orig_y) in enumerate(frame_list):
                     chunks = list(meta) if fi == 0 else []
                     h, w = img.shape[:2]
+                    # Position cel so its origin aligns with the canvas anchor
+                    cel_x = anchor_x - orig_x
+                    cel_y = anchor_y - orig_y
                     rgba_bytes = img.tobytes()
-                    chunks.append(make_cel_chunk(0, 0, canvas_h - h, w, h, rgba_bytes))
+                    chunks.append(make_cel_chunk(0, cel_x, cel_y, w, h, rgba_bytes))
                     all_frame_data.append(ase_frame(dur_ms, chunks))
 
-                # Write file
                 header = bytearray(128)
                 frame_data = b''.join(all_frame_data)
                 file_size = 128 + len(frame_data)
