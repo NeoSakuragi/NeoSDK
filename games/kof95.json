@@ -1,0 +1,352 @@
+{
+  "game_id": "kof95",
+  "title": "The King of Fighters '95",
+  "rom_zip": "roms/kof95.zip",
+  "p_rom": "084-p1.p1",
+  "c_rom_layout": [
+    [
+      "084-c1.c1",
+      "084-c2.c2",
+      "0x000000"
+    ],
+    [
+      "084-c3.c3",
+      "084-c4.c4",
+      "0x800000"
+    ],
+    [
+      "084-c5.c5",
+      "084-c6.c6",
+      "0x1000000"
+    ],
+    [
+      "084-c7.c7",
+      "084-c8.c8",
+      "0x1800000"
+    ]
+  ],
+  "total_sprite_region": "0x1A00000",
+  "bitmask_mode": "auto",
+  "state_table_base": "0x080000",
+  "sdef_table_base": "0x080080",
+  "state_names": {
+    "0": "idle",
+    "1": "walk_fwd",
+    "2": "walk_back",
+    "3": "jump_up",
+    "4": "jump_fwd",
+    "5": "jump_back",
+    "6": "crouch",
+    "7": "stand2crouch",
+    "8": "crouch2stand",
+    "9": "guard_stand",
+    "10": "guard_crouch",
+    "11": "guard_air",
+    "12": "hit_stand",
+    "13": "hit_crouch",
+    "14": "knockdown",
+    "15": "getup"
+  },
+  "characters": [
+    {
+      "char_id": 0,
+      "name": "Heidern",
+      "palettes": {
+        "v0_body": "0x1D9000",
+        "v1_acc": "0x1D9020",
+        "v16_body": "0x1D9200",
+        "v17_acc": "0x1D9220"
+      }
+    },
+    {
+      "char_id": 1,
+      "name": "Ralf Jones",
+      "palettes": {
+        "v0_body": "0x1D9400",
+        "v1_acc": "0x1D9420",
+        "v16_body": "0x1D9600",
+        "v17_acc": "0x1D9620"
+      }
+    },
+    {
+      "char_id": 2,
+      "name": "Clark Still",
+      "palettes": {
+        "v0_body": "0x1D9800",
+        "v1_acc": "0x1D9820",
+        "v16_body": "0x1D9A00",
+        "v17_acc": "0x1D9A20"
+      }
+    },
+    {
+      "char_id": 3,
+      "name": "Athena Asamiya",
+      "palettes": {
+        "v0_body": "0x1D9C00",
+        "v1_acc": "0x1D9C20",
+        "v16_body": "0x1D9E00",
+        "v17_acc": "0x1D9E20"
+      }
+    },
+    {
+      "char_id": 4,
+      "name": "Sie Kensou",
+      "palettes": {
+        "v0_body": "0x1DA000",
+        "v1_acc": "0x1DA020",
+        "v16_body": "0x1DA200",
+        "v17_acc": "0x1DA220"
+      }
+    },
+    {
+      "char_id": 5,
+      "name": "Chin Gentsai",
+      "palettes": {
+        "v0_body": "0x1DA400",
+        "v1_acc": "0x1DA420",
+        "v16_body": "0x1DA600",
+        "v17_acc": "0x1DA620"
+      }
+    },
+    {
+      "char_id": 6,
+      "name": "Kyo Kusanagi",
+      "palettes": {
+        "v0_body": "0x1DA800",
+        "v1_acc": "0x1DA820",
+        "v16_body": "0x1DAA00",
+        "v17_acc": "0x1DAA20"
+      }
+    },
+    {
+      "char_id": 7,
+      "name": "Benimaru Nikaido",
+      "palettes": {
+        "v0_body": "0x1DAC00",
+        "v1_acc": "0x1DAC20",
+        "v16_body": "0x1DAE00",
+        "v17_acc": "0x1DAE20"
+      }
+    },
+    {
+      "char_id": 8,
+      "name": "Goro Daimon",
+      "palettes": {
+        "v0_body": "0x1DB000",
+        "v1_acc": "0x1DB020",
+        "v16_body": "0x1DB200",
+        "v17_acc": "0x1DB220"
+      }
+    },
+    {
+      "char_id": 9,
+      "name": "Iori Yagami",
+      "palettes": {
+        "v0_body": "0x1DB400",
+        "v1_acc": "0x1DB420",
+        "v16_body": "0x1DB600",
+        "v17_acc": "0x1DB620"
+      }
+    },
+    {
+      "char_id": 10,
+      "name": "Eiji Kisaragi",
+      "palettes": {
+        "v0_body": "0x1DB800",
+        "v1_acc": "0x1DB820",
+        "v16_body": "0x1DBA00",
+        "v17_acc": "0x1DBA20"
+      }
+    },
+    {
+      "char_id": 11,
+      "name": "Billy Kane",
+      "palettes": {
+        "v0_body": "0x1DBC00",
+        "v1_acc": "0x1DBC20",
+        "v16_body": "0x1DBE00",
+        "v17_acc": "0x1DBE20"
+      }
+    },
+    {
+      "char_id": 12,
+      "name": "Kim Kaphwan",
+      "palettes": {
+        "v0_body": "0x1C0400",
+        "v1_acc": "0x1C0420",
+        "v16_body": "0x1C0600",
+        "v17_acc": "0x1C0620"
+      }
+    },
+    {
+      "char_id": 13,
+      "name": "Chang Koehan",
+      "palettes": {
+        "v0_body": "0x1C0800",
+        "v1_acc": "0x1C0820",
+        "v16_body": "0x1C0A00",
+        "v17_acc": "0x1C0A20"
+      }
+    },
+    {
+      "char_id": 14,
+      "name": "Choi Bounge",
+      "palettes": {
+        "v0_body": "0x1C0C00",
+        "v1_acc": "0x1C0C20",
+        "v16_body": "0x1C0E00",
+        "v17_acc": "0x1C0E20"
+      }
+    },
+    {
+      "char_id": 15,
+      "name": "Terry Bogard",
+      "palettes": {
+        "v0_body": "0x1DCC00",
+        "v1_acc": "0x1DCC20",
+        "v16_body": "0x1DCE00",
+        "v17_acc": "0x1DCE20"
+      }
+    },
+    {
+      "char_id": 16,
+      "name": "Andy Bogard",
+      "palettes": {
+        "v0_body": "0x1DD000",
+        "v1_acc": "0x1DD020",
+        "v16_body": "0x1DD200",
+        "v17_acc": "0x1DD220"
+      }
+    },
+    {
+      "char_id": 17,
+      "name": "Joe Higashi",
+      "palettes": {
+        "v0_body": "0x1DD400",
+        "v1_acc": "0x1DD420",
+        "v16_body": "0x1DD600",
+        "v17_acc": "0x1DD620"
+      }
+    },
+    {
+      "char_id": 18,
+      "name": "Ryo Sakazaki",
+      "palettes": {
+        "v0_body": "0x1DD800",
+        "v1_acc": "0x1DD820",
+        "v16_body": "0x1DDA00",
+        "v17_acc": "0x1DDA20"
+      }
+    },
+    {
+      "char_id": 19,
+      "name": "Robert Garcia",
+      "palettes": {
+        "v0_body": "0x1DDC00",
+        "v1_acc": "0x1DDC20",
+        "v16_body": "0x1DDE00",
+        "v17_acc": "0x1DDE20"
+      }
+    },
+    {
+      "char_id": 20,
+      "name": "Takuma Sakazaki",
+      "palettes": {
+        "v0_body": "0x1DE000",
+        "v1_acc": "0x1DE020",
+        "v16_body": "0x1DE200",
+        "v17_acc": "0x1DE220"
+      }
+    },
+    {
+      "char_id": 21,
+      "name": "Yuri Sakazaki",
+      "palettes": {
+        "v0_body": "0x1DE400",
+        "v1_acc": "0x1DE420",
+        "v16_body": "0x1DE600",
+        "v17_acc": "0x1DE620"
+      }
+    },
+    {
+      "char_id": 22,
+      "name": "Mai Shiranui",
+      "palettes": {
+        "v0_body": "0x1DE800",
+        "v1_acc": "0x1DE820",
+        "v16_body": "0x1DEA00",
+        "v17_acc": "0x1DEA20"
+      }
+    },
+    {
+      "char_id": 23,
+      "name": "King",
+      "palettes": {
+        "v0_body": "0x1DEC00",
+        "v1_acc": "0x1DEC20",
+        "v16_body": "0x1DEE00",
+        "v17_acc": "0x1DEE20"
+      }
+    },
+    {
+      "char_id": 24,
+      "name": "Saisyu Kusanagi",
+      "palettes": {
+        "v0_body": "0x1DF000",
+        "v1_acc": "0x1DF020",
+        "v16_body": "0x1DF200",
+        "v17_acc": "0x1DF220"
+      }
+    },
+    {
+      "char_id": 25,
+      "name": "Rugal Bernstein",
+      "palettes": {
+        "v0_body": "0x1DF400",
+        "v1_acc": "0x1DF420",
+        "v16_body": "0x1DF600",
+        "v17_acc": "0x1DF620"
+      }
+    },
+    {
+      "char_id": 26,
+      "name": "Omega Rugal",
+      "palettes": {
+        "v0_body": "0x1DF400",
+        "v1_acc": "0x1DF420",
+        "v16_body": "0x1DF600",
+        "v17_acc": "0x1DF620"
+      }
+    },
+    {
+      "char_id": 27,
+      "name": "Nakoruru",
+      "palettes": {
+        "v0_body": "0x1D9C00",
+        "v1_acc": "0x1D9C20",
+        "v16_body": "0x1D9E00",
+        "v17_acc": "0x1D9E20"
+      }
+    },
+    {
+      "char_id": 28,
+      "name": "Edit Team 1",
+      "palettes": {
+        "v0_body": "0x1DA800",
+        "v1_acc": "0x1DA820",
+        "v16_body": "0x1DAA00",
+        "v17_acc": "0x1DAA20"
+      }
+    },
+    {
+      "char_id": 29,
+      "name": "Edit Team 2",
+      "palettes": {
+        "v0_body": "0x1DA800",
+        "v1_acc": "0x1DA820",
+        "v16_body": "0x1DAA00",
+        "v17_acc": "0x1DAA20"
+      }
+    }
+  ]
+}

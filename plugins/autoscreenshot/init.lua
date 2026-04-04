@@ -1,55 +1,62 @@
-local exports = {name="autoscreenshot",version="1.0",description="live pal",license="MIT",author="d"}
+local exports = {name="autoscreenshot",version="1.0",description="detail scan",license="MIT",author="d"}
 function exports.startplugin()
     local fc = 0
-    local saves = {"k", "s", "r"}
-    local names = {"Kim", "Saisyu", "Rugal"}
-    local si = 1
-    local phase = "idle"  -- idle, loading, running, capturing
-    local run_frames = 0
-
     emu.register_frame_done(function()
         fc = fc + 1
-        
-        if phase == "idle" and fc >= 30 and si <= #saves then
-            manager.machine:load(saves[si])
-            phase = "loading"
-            run_frames = 0
-        end
-        
-        if phase == "loading" then
-            run_frames = run_frames + 1
-            if run_frames >= 60 then  -- let game run 60 frames to DMA palettes
-                phase = "capturing"
-            end
-        end
-        
-        if phase == "capturing" then
+        if fc == 30 then manager.machine:load("k") end
+        if fc == 90 then
             local mem = manager.machine.devices[":maincpu"].spaces["program"]
-            print(string.format("[P] === %s ===", names[si]))
-            manager.machine.video:snapshot()
             
-            -- Now read the ACTUAL palette colors from BOTH banks
-            -- The game swaps banks each frame, so read both
-            for bank_name, bank_base in pairs({bank1=0x400000, bank2=0x600000}) do
-                for slot = 16, 31 do
-                    local nz = 0
-                    local s = ""
-                    for i = 0, 15 do
-                        local v = mem:read_u16(bank_base + slot*32 + i*2)
-                        if v ~= 0 then nz = nz + 1 end
-                        s = s .. string.format("%04X ", v)
-                    end
-                    if nz >= 8 then
-                        print(string.format("[P]   %s slot %2d: %s", bank_name, slot, s))
-                    end
+            -- Show sprites using pal 220 (0xDC) = P1, and 208 (0xD0)
+            -- Include position info to identify body vs accessory
+            print("[P] === P1 sprites (pal 0xDC = 220) ===")
+            for spr = 0, 380 do
+                mem:write_u16(0x3C0000, 0x8200 + spr)
+                local scb3 = mem:read_u16(0x3C0002)
+                local height = scb3 & 0x3F
+                if height == 0 then goto next end
+                
+                mem:write_u16(0x3C0000, spr * 64 + 1)
+                local attr = mem:read_u16(0x3C0002)
+                local pal = (attr >> 8) & 0xFF
+                
+                if pal == 0xDC or pal == 0xD0 or pal == 0xC3 or pal == 0xBC then
+                    mem:write_u16(0x3C0000, spr * 64)
+                    local tile = mem:read_u16(0x3C0002)
+                    local sticky = (scb3 >> 6) & 1
+                    local y = (scb3 >> 7) & 0x1FF
+                    mem:write_u16(0x3C0000, 0x8400 + spr)
+                    local scb4 = mem:read_u16(0x3C0002)
+                    local x = (scb4 >> 7) & 0x1FF
+                    
+                    print(string.format("[P]   spr %3d: pal=0x%02X tile=$%04X h=%d Y=%d X=%d sticky=%d",
+                        spr, pal, tile, height, 496-y, x, sticky))
                 end
+                ::next::
             end
             
-            si = si + 1
-            phase = "idle"
-        end
-        
-        if si > #saves and phase == "idle" then
+            -- Also dump the actual palette data at slots 220 and 208
+            print("\n[P] === Palette 220 (0xDC) ===")
+            local s = ""
+            for i = 0, 15 do
+                s = s .. string.format("%04X ", mem:read_u16(0x400000 + 220*32 + i*2))
+            end
+            print("[P]   " .. s)
+            
+            print("[P] === Palette 208 (0xD0) ===")
+            s = ""
+            for i = 0, 15 do
+                s = s .. string.format("%04X ", mem:read_u16(0x400000 + 208*32 + i*2))
+            end
+            print("[P]   " .. s)
+            
+            print("[P] === Palette 195 (0xC3) ===")
+            s = ""
+            for i = 0, 15 do
+                s = s .. string.format("%04X ", mem:read_u16(0x400000 + 195*32 + i*2))
+            end
+            print("[P]   " .. s)
+            
             manager.machine:exit()
         end
     end)

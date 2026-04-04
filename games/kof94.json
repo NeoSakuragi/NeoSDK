@@ -1,0 +1,202 @@
+{
+  "game_id": "kof94",
+  "title": "The King of Fighters '94",
+  "rom_zip": "kof94.zip",
+  "p_rom": "055-p1.p1",
+  "c_rom_layout": [
+    [
+      "055-c1.c1",
+      "055-c2.c2",
+      "0x000000"
+    ],
+    [
+      "055-c3.c3",
+      "055-c4.c4",
+      "0x400000"
+    ],
+    [
+      "055-c5.c5",
+      "055-c6.c6",
+      "0x800000"
+    ],
+    [
+      "055-c7.c7",
+      "055-c8.c8",
+      "0xC00000"
+    ]
+  ],
+  "total_sprite_region": "0x1000000",
+  "bitmask_mode": "word",
+  "state_table_base": "0x080000",
+  "sdef_table_base": "0x080080",
+  "state_names": {
+    "0": "idle",
+    "1": "walk_fwd",
+    "2": "walk_back",
+    "3": "jump_up",
+    "4": "jump_fwd",
+    "5": "jump_back",
+    "6": "crouch",
+    "7": "stand2crouch",
+    "8": "crouch2stand",
+    "9": "guard_stand",
+    "10": "guard_crouch",
+    "11": "guard_air",
+    "12": "hit_stand",
+    "13": "hit_crouch",
+    "14": "knockdown",
+    "15": "getup"
+  },
+  "characters": [
+    {
+      "char_id": 0,
+      "name": "Kyo Kusanagi",
+      "palettes": null
+    },
+    {
+      "char_id": 1,
+      "name": "Benimaru Nikaido",
+      "palettes": null
+    },
+    {
+      "char_id": 2,
+      "name": "Goro Daimon",
+      "palettes": null
+    },
+    {
+      "char_id": 3,
+      "name": "Terry Bogard",
+      "palettes": null
+    },
+    {
+      "char_id": 4,
+      "name": "Andy Bogard",
+      "palettes": null
+    },
+    {
+      "char_id": 5,
+      "name": "Joe Higashi",
+      "palettes": null
+    },
+    {
+      "char_id": 6,
+      "name": "Ryo Sakazaki",
+      "palettes": null
+    },
+    {
+      "char_id": 7,
+      "name": "Robert Garcia",
+      "palettes": null
+    },
+    {
+      "char_id": 8,
+      "name": "Takuma Sakazaki",
+      "palettes": null
+    },
+    {
+      "char_id": 9,
+      "name": "Heidern",
+      "palettes": null
+    },
+    {
+      "char_id": 10,
+      "name": "Ralf Jones",
+      "palettes": null
+    },
+    {
+      "char_id": 11,
+      "name": "Clark Still",
+      "palettes": null
+    },
+    {
+      "char_id": 12,
+      "name": "Athena Asamiya",
+      "palettes": null
+    },
+    {
+      "char_id": 13,
+      "name": "Sie Kensou",
+      "palettes": null
+    },
+    {
+      "char_id": 14,
+      "name": "Chin Gentsai",
+      "palettes": null
+    },
+    {
+      "char_id": 15,
+      "name": "Kim Kaphwan",
+      "palettes": null
+    },
+    {
+      "char_id": 16,
+      "name": "Chang Koehan",
+      "palettes": null
+    },
+    {
+      "char_id": 17,
+      "name": "Choi Bounge",
+      "palettes": null
+    },
+    {
+      "char_id": 18,
+      "name": "Mai Shiranui",
+      "palettes": null
+    },
+    {
+      "char_id": 19,
+      "name": "King",
+      "palettes": null
+    },
+    {
+      "char_id": 20,
+      "name": "Yuri Sakazaki",
+      "palettes": null
+    },
+    {
+      "char_id": 21,
+      "name": "Heavy D!",
+      "palettes": null
+    },
+    {
+      "char_id": 22,
+      "name": "Lucky Glauber",
+      "palettes": null
+    },
+    {
+      "char_id": 23,
+      "name": "Brian Battler",
+      "palettes": null
+    },
+    {
+      "char_id": 24,
+      "name": "Rugal Bernstein",
+      "palettes": null
+    },
+    {
+      "char_id": 25,
+      "name": "Char 25",
+      "palettes": null
+    },
+    {
+      "char_id": 26,
+      "name": "Char 26",
+      "palettes": null
+    },
+    {
+      "char_id": 27,
+      "name": "Char 27",
+      "palettes": null
+    },
+    {
+      "char_id": 28,
+      "name": "Char 28",
+      "palettes": null
+    },
+    {
+      "char_id": 29,
+      "name": "Char 29",
+      "palettes": null
+    }
+  ]
+}
