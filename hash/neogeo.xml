@@ -7,20 +7,20 @@
 		<publisher>Homebrew</publisher>
 		<part name="cart" interface="neo_cart">
 			<dataarea name="maincpu" width="16" endianness="big" size="0x100000">
-				<rom loadflag="load16_word_swap" name="999-p1.p1" offset="0x000000" size="0x100000"/>
+				<rom loadflag="load16_word_swap" name="999-p1.p1" offset="0x000000" size="0x080000" crc="f9f7822b" sha1="572fe7063b3bab114c34ed07f7c188631d9f08b0"/>
 			</dataarea>
-			<dataarea name="fixed" size="0x020000">
-				<rom name="999-s1.s1" offset="0x000000" size="0x020000"/>
+			<dataarea name="fixed" size="0x040000">
+				<rom name="999-s1.s1" offset="0x000000" size="0x020000" crc="7ee8cdcd" sha1="67dfd19f3eb3649d6f3f6631e44d0bd36b8d8d19"/>
 			</dataarea>
 			<dataarea name="audiocpu" size="0x020000">
-				<rom name="999-m1.m1" offset="0x000000" size="0x020000"/>
+				<rom name="999-m1.m1" offset="0x000000" size="0x020000" crc="a8946552" sha1="be1e6a4ded71e88d9a7450b87b67ae18041adaad"/>
 			</dataarea>
-			<dataarea name="ymsnd:adpcma" size="0x100000">
-				<rom name="999-v1.v1" offset="0x000000" size="0x100000"/>
+			<dataarea name="ymsnd:adpcma" size="0x080000">
+				<rom name="999-v1.v1" offset="0x000000" size="0x080000" crc="73b55c82" sha1="9938ef51b28d8ccd7c5653fff195171204048d40"/>
 			</dataarea>
 			<dataarea name="sprites" size="0x200000">
-				<rom loadflag="load16_byte" name="999-c1.c1" offset="0x000000" size="0x100000"/>
-				<rom loadflag="load16_byte" name="999-c2.c2" offset="0x000001" size="0x100000"/>
+				<rom loadflag="load16_byte" name="999-c1.c1" offset="0x000000" size="0x100000" crc="a373e5de" sha1="9fb5eefa908b5ec31ec68a5015b2c56da4d51c1d"/>
+				<rom loadflag="load16_byte" name="999-c2.c2" offset="0x000001" size="0x100000" crc="2073033b" sha1="ae2e6505d60b55d4a4302406cfa6430824654130"/>
 			</dataarea>
 		</part>
 	</software>

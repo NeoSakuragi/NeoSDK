@@ -11,6 +11,95 @@ from extract_sprites_rom import (
 )
 
 
+def _build_mrom(mrom):
+    """Build a minimal Z80 M ROM that satisfies the Neo Geo BIOS.
+
+    The BIOS expects the Z80 to:
+    1. Program the YM2610 Timer B so STATUS_A bit 6 toggles
+    2. Respond to NMI commands from the 68k via port handshake
+    Without this, the BIOS loops forever waiting for Timer B.
+    """
+    # Z80 I/O ports
+    PORT_FROM_68K = 0x00
+    PORT_YM2610_A_ADDR = 0x04
+    PORT_YM2610_A_VAL = 0x05
+    PORT_ENABLE_NMI = 0x08
+    PORT_TO_68K = 0x0C
+
+    pc = 0
+    # === Entry point $0000 ===
+    mrom[pc] = 0xF3; pc += 1          # DI
+    mrom[pc] = 0xC3; pc += 1          # JP $0100
+    mrom[pc] = 0x00; pc += 1
+    mrom[pc] = 0x01; pc += 1
+
+    # === INT handler $0038 (IM 1) ===
+    pc = 0x38
+    mrom[pc] = 0xF3; pc += 1          # DI
+    mrom[pc] = 0xF5; pc += 1          # PUSH AF
+    # Write YM2610 reg $27 = $3A (reset flags, keep timer B running)
+    mrom[pc] = 0x3E; pc += 1          # LD A, $27
+    mrom[pc] = 0x27; pc += 1
+    mrom[pc] = 0xD3; pc += 1          # OUT ($04), A
+    mrom[pc] = PORT_YM2610_A_ADDR; pc += 1
+    mrom[pc] = 0x3E; pc += 1          # LD A, $3A
+    mrom[pc] = 0x3A; pc += 1
+    mrom[pc] = 0xD3; pc += 1          # OUT ($05), A
+    mrom[pc] = PORT_YM2610_A_VAL; pc += 1
+    mrom[pc] = 0xF1; pc += 1          # POP AF
+    mrom[pc] = 0xFB; pc += 1          # EI
+    mrom[pc] = 0xED; pc += 1          # RETI
+    mrom[pc] = 0x4D; pc += 1
+
+    # === NMI handler $0066 ===
+    pc = 0x66
+    mrom[pc] = 0xF5; pc += 1          # PUSH AF
+    mrom[pc] = 0xDB; pc += 1          # IN A, ($00)
+    mrom[pc] = PORT_FROM_68K; pc += 1
+    mrom[pc] = 0xF6; pc += 1          # OR $80  (set bit 7 = acknowledge)
+    mrom[pc] = 0x80; pc += 1
+    mrom[pc] = 0xD3; pc += 1          # OUT ($0C), A
+    mrom[pc] = PORT_TO_68K; pc += 1
+    mrom[pc] = 0xF1; pc += 1          # POP AF
+    mrom[pc] = 0xED; pc += 1          # RETN
+    mrom[pc] = 0x45; pc += 1
+
+    # === Init code $0100 ===
+    pc = 0x100
+    mrom[pc] = 0x31; pc += 1          # LD SP, $FFFF
+    mrom[pc] = 0xFF; pc += 1
+    mrom[pc] = 0xFF; pc += 1
+    mrom[pc] = 0xED; pc += 1          # IM 1
+    mrom[pc] = 0x56; pc += 1
+    mrom[pc] = 0xD3; pc += 1          # OUT ($08), A  (enable NMI)
+    mrom[pc] = PORT_ENABLE_NMI; pc += 1
+    # Program YM2610 Timer B counter ($26) = $FF (fast)
+    mrom[pc] = 0x3E; pc += 1          # LD A, $26
+    mrom[pc] = 0x26; pc += 1
+    mrom[pc] = 0xD3; pc += 1          # OUT ($04), A
+    mrom[pc] = PORT_YM2610_A_ADDR; pc += 1
+    mrom[pc] = 0x3E; pc += 1          # LD A, $FF
+    mrom[pc] = 0xFF; pc += 1
+    mrom[pc] = 0xD3; pc += 1          # OUT ($05), A
+    mrom[pc] = PORT_YM2610_A_VAL; pc += 1
+    # Enable Timer B: reg $27 = $3A
+    mrom[pc] = 0x3E; pc += 1          # LD A, $27
+    mrom[pc] = 0x27; pc += 1
+    mrom[pc] = 0xD3; pc += 1          # OUT ($04), A
+    mrom[pc] = PORT_YM2610_A_ADDR; pc += 1
+    mrom[pc] = 0x3E; pc += 1          # LD A, $3A
+    mrom[pc] = 0x3A; pc += 1
+    mrom[pc] = 0xD3; pc += 1          # OUT ($05), A
+    mrom[pc] = PORT_YM2610_A_VAL; pc += 1
+    # Enable interrupts and idle
+    mrom[pc] = 0xFB; pc += 1          # EI
+    mainloop = pc
+    mrom[pc] = 0x76; pc += 1          # HALT
+    mrom[pc] = 0xC3; pc += 1          # JP mainloop
+    mrom[pc] = mainloop & 0xFF; pc += 1
+    mrom[pc] = (mainloop >> 8) & 0xFF; pc += 1
+
+
 def rgb_to_neogeo(r, g, b):
     r5 = r >> 3; g5 = g >> 3; b5 = b >> 3
     return (((r5 & 1) << 14) | ((r5 >> 1) << 8) |
@@ -244,21 +333,22 @@ def main():
 
     # S ROM: 128KB empty
     srom = b'\x00' * 0x20000
-    # M ROM: 128KB halt loop
+    # M ROM: 128KB minimal Z80 sound driver
+    # Must respond to BIOS handshake and program YM2610 Timer B
     mrom = bytearray(0x20000)
-    mrom[0] = 0x76; mrom[1] = 0xC3; mrom[2] = 0; mrom[3] = 0
-    # V ROM: 1MB silence
-    vrom = b'\x80' * 0x100000
+    _build_mrom(mrom)
+    # V ROM: 512KB silence (matches softlist entry)
+    vrom = b'\x80' * 0x80000
 
-    # Package
+    # Package — ROM sizes must match softlist XML exactly
     out = "clarkdemo.zip"
     with zipfile.ZipFile(out, 'w', zipfile.ZIP_DEFLATED) as zf:
-        zf.writestr("999-p1.p1", prom)
-        zf.writestr("999-s1.s1", srom)
-        zf.writestr("999-m1.m1", bytes(mrom))
-        zf.writestr("999-v1.v1", vrom)
-        zf.writestr("999-c1.c1", bytes(c1))
-        zf.writestr("999-c2.c2", bytes(c2))
+        zf.writestr("999-p1.p1", prom[:0x80000])   # 512KB P ROM
+        zf.writestr("999-s1.s1", srom)              # 128KB S ROM
+        zf.writestr("999-m1.m1", bytes(mrom))       # 128KB M ROM
+        zf.writestr("999-v1.v1", vrom)              # 512KB V ROM
+        zf.writestr("999-c1.c1", bytes(c1))         # 1MB C1 ROM
+        zf.writestr("999-c2.c2", bytes(c2))         # 1MB C2 ROM
 
     import shutil
     shutil.copy(out, "roms/clarkdemo.zip")

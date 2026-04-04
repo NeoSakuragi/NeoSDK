@@ -12,7 +12,7 @@ REG_WATCHDOG	equ	$300001
 ; === BIOS variables ===
 BIOS_SYSTEM_MODE equ	$10FD80
 BIOS_USER_REQUEST equ	$10FDAE
-BIOS_USER_MODE	equ	$10FDCB
+BIOS_USER_MODE	equ	$10FDAF
 BIOS_P1CURRENT	equ	$10FD96
 BIOS_P1CHANGE	equ	$10FD97
 
@@ -46,21 +46,24 @@ MAX_FRAMES	equ	20
 	dc.l	$00C0040E	; Address error
 	dc.l	$00C00414	; Illegal instruction
 	dc.l	$00C0041A	; Divide by zero
-	dc.l	$00C00420	; CHK
-	dc.l	$00C00426	; TRAPV
-	dc.l	$00C00426	; Privilege violation
+	dc.l	$00C0041A	; CHK instruction
+	dc.l	$00C0041A	; TRAPV instruction
+	dc.l	$00C0041A	; Privilege violation
 	dc.l	$00C00420	; Trace
-	dc.l	$00C00426	; Line-A
-	dc.l	$00C00426	; Line-F
-	dcb.l	3,0		; Reserved
+	dc.l	$00C00426	; Line-A (FPU emu)
+	dc.l	$00C00426	; Line-F (FPU emu)
+	dcb.l	3,$FFFFFFFF	; Reserved
 	dc.l	$00C0042C	; Uninitialized interrupt
-	dcb.l	8,0		; Reserved
+	dcb.l	8,$FFFFFFFF	; Reserved
 	dc.l	$00C00432	; Spurious interrupt
 	dc.l	vblank_handler	; Level 1 = VBlank
 	dc.l	$00C0043E	; Level 2 = Timer -> BIOS
-	dcb.l	5,0		; Level 3-7
+	dc.l	$00000000	; Level 3 (unused)
+	dcb.l	4,$00000000	; Level 4-7 (unused)
 	dcb.l	16,$FFFFFFFF	; TRAP 0-15
-	dcb.l	16,0		; Pad to $100
+	dcb.l	8,$FFFFFFFF	; FPU errors (unused)
+	dcb.l	3,$FFFFFFFF	; MMU errors (unused)
+	dcb.l	5,$FFFFFFFF	; Reserved
 
 ; =====================================================================
 ; Game header ($000100)
@@ -83,8 +86,12 @@ MAX_FRAMES	equ	20
 	jmp	(stub_rts).l		; DEMO_END ($12E-$133)
 	jmp	(stub_rts).l		; COIN_SOUND ($134-$139)
 
-	org	$000182
-	dc.l	security_code	; Pointer to security code (BIOS dereferences this)
+	; $13A-$17F: 70 bytes of $FF (required by header format)
+	dcb.b	70,$FF
+	; $180-$181: reserved word
+	dc.w	$0000
+	; $182-$185: pointer to security code
+	dc.l	security_code
 
 	org	$000186
 security_code:
@@ -169,6 +176,22 @@ user_init:
 game_main:
 	; NOW set system mode bit 7 so game controls VBlank
 	ori.b	#$80,BIOS_SYSTEM_MODE
+	; Enable interrupts (BIOS calls USER with mask=7, we need VBlank!)
+	move	#$2000,sr
+	; Set up palette again (BIOS may have cleared it between init and game)
+	lea	palette_data,a0
+	lea	PALRAM+$20,a1	; Palette 1 starts at $400020
+	moveq	#15,d0
+.pal_loop2:
+	move.w	(a0)+,(a1)+
+	dbra	d0,.pal_loop2
+	; Background color = dark blue
+	move.w	#$1008,PALRAM
+	; Init variables
+	clr.w	cur_anim
+	clr.w	cur_frame
+	clr.w	frame_timer
+	clr.b	vblank_flag
 	; Render first frame
 	bsr	render_sprites
 
