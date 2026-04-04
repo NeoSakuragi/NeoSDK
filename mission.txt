@@ -1,0 +1,112 @@
+# KOF95 Sprite Extraction — Complete
+
+## What this project does
+
+Extracts all character sprite frames directly from the KOF95 Neo Geo ROM
+(MAME format), with no emulator needed at runtime.
+
+## How to run
+
+```bash
+.venv/bin/python3 extract_sprites_rom.py
+```
+
+Output goes to `rom_sprites_final/`. Takes ~5 minutes. Requires PIL/Pillow and NumPy
+(already installed in `.venv/`).
+
+## Output
+
+- **30 characters**, **8031 unique animation frames**, **10,480 PNGs** total
+- Each character has up to **4 palette variants**: p1 (default), p2, alt1, alt2
+- Per-character folders with per-state animation strips (idle.png, walk_fwd.png, etc.)
+- Combined atlas PNGs at the top level
+
+## Files
+
+```
+extract_sprites_rom.py   — Main extraction script (ROM-only, no emulator)
+char_palettes_all.json   — 30 character palettes (4 variants each) from P ROM
+launch_kof95.sh          — MAME launcher (for optional debugging)
+mission.txt              — This file
+roms/kof95.zip           — KOF95 ROM (MAME format)
+roms/neogeo.zip          — Neo Geo BIOS
+.venv/                   — Python venv with PIL, NumPy, Capstone
+rom_sprites_final/       — Extracted sprites output
+```
+
+## How it works (reverse-engineered from 68k disassembly)
+
+### ROM layout
+- **P ROM** (084-p1.p1): 2MB 68000 code + data, byte-swapped, split layout
+- **C ROM** (084-c1..c8): 27MB sprite tile graphics, 4bpp planar, 128 bytes/tile
+
+### Character sprite data chain
+```
+$080000[char_id * 4]  → state pointer array (256 animation states)
+$080080[char_id * 4]  → sprite definition table (512 entries)
+
+State pointer → animation bytecode at $09xxxx
+  Frame entry: [duration:8] [fragment_ptr:24] [flags:16]
+
+Fragment at fragment_ptr: [Y:s16] [X:s16] [sprite_def_index:16]
+
+Sprite def record:
+  [columns:8] [tiles_per_col:8] [palette_cfg:16] [base_tile:16] [bitmask bytes...]
+
+Tile code = (palette_cfg & 0xF) << 16 | base_tile  (20-bit C ROM index)
+Bitmask: 1 byte per column, MSB = top tile, 1 = visible, 0 = transparent
+Tile codes increment sequentially for each visible tile.
+```
+
+### Palette table
+- Located at P ROM offset $1DA000
+- 30 blocks of $200 bytes (16 sub-palettes per character)
+- Neo Geo color format: D R0 G0 B0 R4R3R2R1 G4G3G2G1 B4B3B2B1
+
+### Character roster (P ROM index order)
+```
+ 0 Kyo Kusanagi       10 Chin Gentsai       20 Heidern
+ 1 Benimaru Nikaido    11 Billy Kane          21 Mai Shiranui
+ 2 Terry Bogard        12 Kim Kaphwan         22 Nakoruru
+ 3 Athena Asamiya      13 Choi Bounge         23 King
+ 4 Andy Bogard         14 Eiji Kisaragi       24 Saisyu Kusanagi
+ 5 Joe Higashi         15 Ralf Jones          25 Rugal Bernstein
+ 6 Ryo Sakazaki        16 Clark Still         26 Omega Rugal
+ 7 Robert Garcia       17 Sie Kensou          27 Yuri Sakazaki
+ 8 Takuma Sakazaki     18 Goro Daimon         28 Edit Team 1
+ 9 Chang Koehan        19 Iori Yagami         29 Edit Team 2
+```
+
+## Known limitations
+
+- **Single palette per frame**: The game uses 4+ palettes per character
+  simultaneously (e.g. Kyo uses palettes 22, 23, 26, 31 — skin, clothing
+  details, and white uniform respectively). Each tile references its own
+  palette via the VRAM word1 high byte. The extractor applies palette 23
+  (the main body palette) to all tiles, so clothing colors are approximate.
+  Getting pixel-perfect colors requires per-tile palette selection, which
+  means emulating the full sprite renderer's multi-palette assignment logic.
+  The palette data IS different per character (verified via MAME runtime
+  captures) — the issue is purely in the rendering, not the data.
+- **Character names**: Confirmed for 7 characters via MAME runtime sdef
+  pointer matching (Kyo=6, Iori=9, Athena=3, Kim=12, Terry=15, Ryo=18,
+  Yuri=21). Remaining 23 inferred from KOF95 team groupings.
+- **No animation metadata export**: Frame durations are parsed but not saved
+  to a separate data file (they're in the bytecode).
+
+## Palette system (reverse engineered)
+
+The Neo Geo loads 16 palettes (indices 16-31) per P1 character:
+- Palettes 22-23: Main body (skin tones, 90+87 tiles)
+- Palette 26: Detail/highlight variant (15 tiles)
+- Palette 31: Clothing-specific (white/gray for Kyo, purple for Iori, etc. 63 tiles)
+- Palettes 16-21, 24-30: Special effects, projectiles, shadows
+
+The palette data changes per character via DMA from ROM during fight init.
+Additionally, palette animation cycles some color values each frame
+(POW meter glow, character aura effects).
+
+ROM palette source locations (verified for 7 characters):
+- Table 1 at $1D9000+: teams at $C00 spacing, members at $400 spacing
+  Heidern=$1D90C0, Athena=$1D9CC0, Kyo=$1DA8C0, Iori=$1DB4C0, Terry=$1DCCC0
+- Table 2 at $1C0000+: Kim=$1C04C2, Ryo=$1C1CC0, Yuri=$1C28C0

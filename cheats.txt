@@ -1,0 +1,87 @@
+# KOF95 ROM Hacks — Reverse Engineered from 68k Disassembly
+
+## How to apply
+
+    .venv/bin/python3 apply_cheats.py
+
+Patches roms/kof95.zip (backup at roms/kof95_original.zip).
+Run with: QT_QPA_PLATFORM=xcb mame -rompath ./roms kof95
+
+## Active cheats (2 patches, 4 bytes total)
+
+### 1. Defender Always Hittable
+Address: $23C6 (2 bytes)
+Original: BEQ.B $23F0 (67 28)
+Patched:  NOP (4E 71)
+
+Bypasses the defender collision box activation check in hit detection.
+Normally, when a character enters knockdown/fall states, the game clears
+their collision box flags ($7C), making them unhittable. This patch
+skips that check — the defender is always eligible for hit testing.
+
+### 2. Allow Re-Hit During Hit Reaction
+Address: $245A (2 bytes)
+Original: BNE.B $2480 (66 24)
+Patched:  NOP (4E 71)
+
+Removes the $AC guard that prevents a character from being hit while
+already in a hit reaction state. Allows hits to connect on every frame
+of an attack, enabling true infinite juggle combos.
+
+## How it was found
+
+Compared save states of juggleable vs non-juggleable knockdowns:
+- State 4: Yuri hit by heavy scissors kick (D button) → $7C=$81 → CAN juggle
+- State 5: Yuri hit by light scissors kick (B button) → $7C=$00 → CANNOT juggle
+
+Key difference: $7C bit 0 (hurtbox active). The heavy kick keeps the
+hurtbox active, the light kick clears all boxes. Patch 1 bypasses this.
+
+Frame-by-frame Lua dump confirmed: during non-juggleable fall, ALL
+collision boxes are deactivated ($7C=$00, all box flags "off").
+
+## Technical: Hit detection flow at $22CE
+
+    1. For each attacker in attacker list ($3F14):
+    2.   For each defender in defender list ($3F94):
+    3.     Skip if same team ($130 check)
+    4.     For each attacker box (3→0):
+    5.       Check attacker $7C bit [box] — skip if inactive ($238A)
+    6.       For each defender box (3→0):
+    7.         Check defender $7C bit [box] — ★ PATCH 1 HERE ($23C6)
+    8.         Test box type compatibility via jump table ($23D4)
+    9.         Call AABB overlap test ($2482)
+    10.        If overlap: register hit ($2432)
+    11.          Set hit data on attacker ($AA-$AB) and defender ($AC-$AD)
+    12.          Check defender $AC ≠ 0 — ★ PATCH 2 HERE ($2456/$245A)
+    13.          Swap handler via $AE (trigger hit reaction)
+
+## Character struct fields (collision-related)
+
+    +$7C: Collision box activation bitmask
+          Bits 0-3 = boxes 0-3 active
+          Bit 7 = invulnerability flag (used by state machine)
+    +$90: Box 0 (5 bytes: type, x_off, y_off, x_half, y_half)
+    +$95: Box 1
+    +$9A: Box 2
+    +$9F: Box 3
+    +$AC: Hit result — non-zero = already in hit reaction
+    +$AE: Saved handler pointer (swapped on hit for reaction code)
+
+## Death sequence juggling (NOT working — documented for reference)
+
+During KO, the game disables combat at multiple levels:
+- Character handlers stop calling $2262/$2294 (list registration)
+- Input is overridden to $00 via CPU control flags ($2782 bits 3-4)
+- The death state handler reclaims obj+$00 within 1 frame after any hit
+
+Attempts made:
+- Code injection trampoline at $79F58 to force-register P1/P2 in lists
+- Bypassed all registration guards ($2262/$2294 → BRA to skip checks)
+- Lua force-write of lists + input restoration
+
+Result: hits register (visible as micro-freeze) but the death handler
+immediately overrides the hit reaction. The KO sequence is a completely
+separate game state that wins the handler priority war. Solving this
+would require patching the death handler to yield to hit reactions —
+a much deeper modification to the state machine.

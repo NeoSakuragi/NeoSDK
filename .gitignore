@@ -1,0 +1,11 @@
+roms/
+.venv/
+__pycache__/
+*.pyc
+*.zip
+/tmp/
+.claude/
+clark_idle_test.aseprite
+clark_walk.aseprite
+extracted_sounds/
+chang_vram.txt
