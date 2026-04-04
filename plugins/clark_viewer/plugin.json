@@ -1,0 +1,10 @@
+{
+    "plugin": {
+        "name": "clark_viewer",
+        "description": "Clark Animation Viewer",
+        "version": "1.0",
+        "author": "NeoGeoAnalyzer",
+        "type": "plugin",
+        "start": "false"
+    }
+}

@@ -1,0 +1,10 @@
+{
+    "plugin": {
+        "name": "autoscreenshot",
+        "description": "Auto screenshot",
+        "version": "1.0",
+        "author": "demo",
+        "type": "plugin",
+        "start": "false"
+    }
+}
