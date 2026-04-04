@@ -1,4 +1,4 @@
-local exports = {name="autoscreenshot",version="1.0",description="Clark Viewer FINAL",license="MIT",author="d"}
+local exports = {name="autoscreenshot",version="1.0",description="Clark FINAL v2",license="MIT",author="d"}
 
 local clark_pal = {0x014E,0x4F00,0x7FD9,0x0FB7,0x3D73,0x3941,0x6410,0x1579,0x4358,0x5135,0x0014,0x100F,0x4442,0x5331,0x1220,0x0100}
 local ST = 0x080A00
@@ -57,9 +57,9 @@ function exports.startplugin()
     local function render()
         local frm = anims[ca] and anims[ca].frames[cf]
         if not frm then return end
-        -- Clear our slots
+        -- Clear our slots via SCB3
         mem:write_u16(0x3C0004, 1)
-        mem:write_u16(0x3C0000, 0x8200 + 1)
+        mem:write_u16(0x3C0000, 0x8201)
         for s=1,20 do mem:write_u16(0x3C0002, 0) end
         -- Render
         local slot, AX, AY = 1, 160, 180
@@ -94,10 +94,15 @@ function exports.startplugin()
         end
     end
 
+    -- BEFORE frame: palette + render
     emu.register_frame(function()
         fc = fc + 1
         if not active or not mem then return end
-        for i=1,16 do mem:write_u16(0x400000+23*32+(i-1)*2, clark_pal[i]) end
+        -- Write Clark palette to BOTH banks every frame
+        for i=1,16 do
+            mem:write_u16(0x400000+23*32+(i-1)*2, clark_pal[i])
+            mem:write_u16(0x600000+23*32+(i-1)*2, clark_pal[i])
+        end
         mem:write_u8(0x300001, 0)
         ft = ft + 1
         if ft >= 8 then ft = 0; cf = cf + 1
@@ -106,6 +111,7 @@ function exports.startplugin()
         render()
     end, "clark")
 
+    -- AFTER frame: also write palette (catch the other bank swap phase)
     emu.register_frame_done(function()
         if fc == 1200 and not active then
             mem = manager.machine.devices[":maincpu"].spaces["program"]
@@ -115,6 +121,11 @@ function exports.startplugin()
             print("[V] Active!")
         end
         if not active then return end
+        -- Write palette again after frame (covers bank swap)
+        for i=1,16 do
+            mem:write_u16(0x400000+23*32+(i-1)*2, clark_pal[i])
+            mem:write_u16(0x600000+23*32+(i-1)*2, clark_pal[i])
+        end
         if fc >= 1500 and fc % 90 == 0 and shots < 5 then
             shots = shots + 1
             manager.machine.video:snapshot()
