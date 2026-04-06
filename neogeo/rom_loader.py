@@ -30,6 +30,18 @@ def load_prom(config):
     return bytes(prom)
 
 
+def load_p2rom(config):
+    """Load P2 ROM for KOF96+ — byte-swapped but NOT bank-swapped."""
+    rom_zip = config["rom_zip"]
+    p2_name = config["p2_rom"]
+    with zipfile.ZipFile(rom_zip, "r") as zf:
+        raw = bytearray(zf.read(p2_name))
+    # Byte-swap within each 16-bit word
+    for i in range(0, len(raw), 2):
+        raw[i], raw[i + 1] = raw[i + 1], raw[i]
+    return bytes(raw)
+
+
 def load_sprite_rom(config):
     """Load and interleave C ROM pairs from a game config dict."""
     rom_zip = config["rom_zip"]

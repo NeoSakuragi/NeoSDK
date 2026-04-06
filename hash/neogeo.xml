@@ -1,26 +1,26 @@
 <?xml version="1.0"?>
 <!DOCTYPE softwarelist SYSTEM "softwarelist.dtd">
-<softwarelist name="neogeo" description="SNK Neo-Geo cartridges">
+<softwarelist name="neogeo" description="Neo Geo cartridges">
 	<software name="clarkdemo">
-		<description>Clark Demo</description>
-		<year>2026</year>
+		<description>Sprite Viewer</description>
+		<year>2025</year>
 		<publisher>Homebrew</publisher>
 		<part name="cart" interface="neo_cart">
-			<dataarea name="maincpu" width="16" endianness="big" size="0x100000">
-				<rom loadflag="load16_word_swap" name="999-p1.p1" offset="0x000000" size="0x080000" crc="f9f7822b" sha1="572fe7063b3bab114c34ed07f7c188631d9f08b0"/>
+			<dataarea name="maincpu" width="16" endianness="big" size="0x080000">
+				<rom name="999-p1.p1" size="524288" crc="5e92f113" sha1="eb7bb5a9144790cee354680e6cb2583ad8b2b98c" offset="0x000000" loadflag="load16_word_swap"/>
 			</dataarea>
-			<dataarea name="fixed" size="0x040000">
-				<rom name="999-s1.s1" offset="0x000000" size="0x020000" crc="7ee8cdcd" sha1="67dfd19f3eb3649d6f3f6631e44d0bd36b8d8d19"/>
+			<dataarea name="fixed" size="0x020000">
+				<rom name="999-s1.s1" size="131072" crc="7ee8cdcd" sha1="67dfd19f3eb3649d6f3f6631e44d0bd36b8d8d19" offset="0x000000"/>
 			</dataarea>
 			<dataarea name="audiocpu" size="0x020000">
-				<rom name="999-m1.m1" offset="0x000000" size="0x020000" crc="a8946552" sha1="be1e6a4ded71e88d9a7450b87b67ae18041adaad"/>
+				<rom name="999-m1.m1" size="131072" crc="7cd52e5d" sha1="b244f81d21a3a44ba5fe37a205b017fc4f7ee534" offset="0x000000"/>
 			</dataarea>
 			<dataarea name="ymsnd:adpcma" size="0x080000">
-				<rom name="999-v1.v1" offset="0x000000" size="0x080000" crc="73b55c82" sha1="9938ef51b28d8ccd7c5653fff195171204048d40"/>
+				<rom name="999-v1.v1" size="524288" crc="3b362cfc" sha1="6253e7417b16f0649213e2f5af62c211e7a83b64" offset="0x000000"/>
 			</dataarea>
 			<dataarea name="sprites" size="0x200000">
-				<rom loadflag="load16_byte" name="999-c1.c1" offset="0x000000" size="0x100000" crc="a373e5de" sha1="9fb5eefa908b5ec31ec68a5015b2c56da4d51c1d"/>
-				<rom loadflag="load16_byte" name="999-c2.c2" offset="0x000001" size="0x100000" crc="2073033b" sha1="ae2e6505d60b55d4a4302406cfa6430824654130"/>
+				<rom name="999-c1.c1" size="1048576" crc="f4627f90" sha1="19b3442f4abeee26fbee6e64cfb658f4a274e6ea" offset="0x000000" loadflag="load16_byte"/>
+				<rom name="999-c2.c2" size="1048576" crc="56ecdb94" sha1="77a091120291eebe15486c323238e107809fd3c1" offset="0x000001" loadflag="load16_byte"/>
 			</dataarea>
 		</part>
 	</software>

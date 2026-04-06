@@ -15,10 +15,13 @@ import numpy as np
 from PIL import Image
 from collections import defaultdict
 
-from neogeo.rom_loader import load_prom, load_sprite_rom
-from neogeo.sprite_decode import r16, r32, rs16, read_palette
-from neogeo.animation import parse_animation, follow_fragment_chain
-from neogeo.renderer import render_frame, render_sdef
+from neogeo.rom_loader import load_prom, load_sprite_rom, load_p2rom
+from neogeo.sprite_decode import r16, r32, rs16, read_palette, decode_color
+from neogeo.animation import (parse_animation, follow_fragment_chain,
+                               parse_kof96_animation, read_kof96_fragment,
+                               read_kof96_sdef)
+from neogeo.renderer import (render_frame, render_sdef,
+                              render_kof96_frame)
 
 # ─── Aseprite format helpers ────────────────────────────────────────
 
@@ -272,6 +275,195 @@ def extract_game(config, char_filter=None, do_aseprite=True, do_png=True):
     print(f"\nDone! {total_frames} total frames → output/{game_id}/sprites/")
 
 
+def extract_kof96(config, char_filter=None, do_aseprite=True, do_png=True):
+    game_id = config["game_id"]
+    state_names = config.get("state_names", {})
+    state_table_base = int(config["state_table_base"], 16)
+
+    print(f"Loading {config['title']}...")
+    prom = load_prom(config)
+    p2rom = load_p2rom(config)
+    spr_data = load_sprite_rom(config)
+
+    # Grayscale fallback palette (palette mapping TBD)
+    gray = [(0, 0, 0)] + [(int(i * 255 / 15),) * 3 for i in range(1, 16)]
+
+    out_base = os.path.join("output", game_id, "sprites")
+    os.makedirs(out_base, exist_ok=True)
+
+    total_frames = 0
+
+    for char_info in config["characters"]:
+        char_id = char_info["char_id"]
+        name = char_info["name"]
+        safe = name.replace(" ", "_").replace(".", "").replace("!", "").lower()
+
+        if char_filter is not None and char_id != char_filter:
+            continue
+
+        body_pal = acc_pal = gray
+
+        # Get per-character fragment base and sdef table
+        from neogeo.animation import get_char_tables_96
+        char_frag_base, char_sdef_tbl = get_char_tables_96(p2rom, char_id)
+
+        # Read character state table
+        if state_table_base + char_id * 4 + 4 > len(prom):
+            continue
+        char_state_table = r32(prom, state_table_base + char_id * 4)
+        if char_state_table < 0x080000 or char_state_table >= len(prom):
+            continue
+
+        # Collect all unique frames across states
+        all_frames = []  # (state_id, duration, parts)
+        seen_sigs = set()
+        state_frame_counts = {}
+
+        for state_id in range(256):
+            state_ptr_off = char_state_table + state_id * 4
+            if state_ptr_off + 4 > len(prom):
+                break
+            state_addr = r32(prom, state_ptr_off)
+            if state_addr == 0 or state_addr < 0x080000 or state_addr >= len(prom):
+                continue
+
+            fd_body, fd_acc, anim_frames = parse_kof96_animation(prom, state_addr)
+            if fd_body is None or not anim_frames:
+                continue
+
+            state_count = 0
+            for duration, frame_idx in anim_frames:
+                # Build parts list: body + accessory
+                parts = []
+
+                body_frag = read_kof96_fragment(p2rom, fd_body + frame_idx, char_frag_base)
+                if body_frag is None:
+                    continue
+                fy, fx, si = body_frag
+                body_sdef = read_kof96_sdef(p2rom, si, char_sdef_tbl)
+                if body_sdef is None:
+                    continue
+                parts.append((fy, fx, body_sdef))
+
+                # TODO: accessory compositing needs work (causes double-layering)
+                # if fd_acc is not None:
+                #     acc_frag = read_kof96_fragment(p2rom, fd_acc + frame_idx, char_frag_base)
+                #     if acc_frag is not None:
+                #         ay, ax, asi = acc_frag
+                #         acc_sdef = read_kof96_sdef(p2rom, asi, char_sdef_tbl)
+                #         if acc_sdef is not None:
+                #             parts.append((ay, ax, acc_sdef))
+
+                # Dedup by tile signature
+                sig = tuple((p[0], p[1], tuple(t[2] for t in p[2]["tiles"]))
+                            for p in parts)
+                if sig in seen_sigs:
+                    continue
+                seen_sigs.add(sig)
+
+                all_frames.append((state_id, duration, parts))
+                state_count += 1
+
+            if state_count:
+                state_frame_counts[state_id] = state_count
+
+        if not all_frames:
+            continue
+
+        # Render all frames
+        rendered = []
+        for state_id, duration, parts in all_frames:
+            result = render_kof96_frame(spr_data, parts, body_pal, acc_pal,
+                                        return_origin=True)
+            if result[0] is not None:
+                img, orig_x, orig_y = result
+                rendered.append((state_id, duration, img, parts, orig_x, orig_y))
+
+        if not rendered:
+            continue
+
+        total_frames += len(rendered)
+        char_dir = os.path.join(out_base, f"{char_id:02d}_{safe}")
+        os.makedirs(char_dir, exist_ok=True)
+
+        # ── PNG Atlas ──
+        if do_png:
+            all_imgs = [img for _, _, img, _, _, _ in rendered]
+            cols_atlas = min(10, len(all_imgs))
+            rows_atlas = (len(all_imgs) + cols_atlas - 1) // cols_atlas
+            max_fw = max(im.shape[1] for im in all_imgs)
+            max_fh = max(im.shape[0] for im in all_imgs)
+            gap = 4
+            atlas = np.zeros((rows_atlas * (max_fh + gap),
+                              cols_atlas * (max_fw + gap), 4), dtype=np.uint8)
+            for i, im in enumerate(all_imgs):
+                c = i % cols_atlas
+                r = i // cols_atlas
+                fh, fw = im.shape[:2]
+                atlas[r * (max_fh + gap):r * (max_fh + gap) + fh,
+                      c * (max_fw + gap):c * (max_fw + gap) + fw] = im
+            Image.fromarray(atlas, "RGBA").save(
+                os.path.join(out_base, f"{char_id:02d}_{safe}_atlas.png"))
+
+        # ── Aseprite files (per state) ──
+        if do_aseprite:
+            by_state = defaultdict(list)
+            for state_id, duration, img, parts, orig_x, orig_y in rendered:
+                duration_ms = max(16, int(duration * 1000 / 60))
+                by_state[state_id].append((duration_ms, img, orig_x, orig_y))
+
+            max_above = max_below = max_left = max_right = 0
+            for _, _, img, _, ox, oy in rendered:
+                h, w = img.shape[:2]
+                max_above = max(max_above, oy)
+                max_below = max(max_below, h - oy)
+                max_left = max(max_left, ox)
+                max_right = max(max_right, w - ox)
+            canvas_w = max_left + max_right
+            canvas_h = max_above + max_below
+            anchor_x = max_left
+            anchor_y = max_above
+
+            for state_id, frame_list in sorted(by_state.items()):
+                sname = state_names.get(str(state_id), f"state_{state_id:03d}")
+                n_frames = len(frame_list)
+
+                meta = [make_color_profile_chunk(), make_palette_chunk(body_pal)]
+                meta.append(make_layer_chunk("Sprite"))
+                meta.append(make_tags_chunk([(sname, 0, n_frames - 1, 0)]))
+
+                all_frame_data = []
+                for fi, (dur_ms, img, orig_x, orig_y) in enumerate(frame_list):
+                    chunks = list(meta) if fi == 0 else []
+                    h, w = img.shape[:2]
+                    cel_x = anchor_x - orig_x
+                    cel_y = anchor_y - orig_y
+                    rgba_bytes = img.tobytes()
+                    chunks.append(make_cel_chunk(0, cel_x, cel_y, w, h, rgba_bytes))
+                    all_frame_data.append(ase_frame(dur_ms, chunks))
+
+                header = bytearray(128)
+                frame_data = b''.join(all_frame_data)
+                file_size = 128 + len(frame_data)
+                struct.pack_into('<I', header, 0, file_size)
+                struct.pack_into('<H', header, 4, 0xA5E0)
+                struct.pack_into('<H', header, 6, n_frames)
+                struct.pack_into('<H', header, 8, canvas_w)
+                struct.pack_into('<H', header, 10, canvas_h)
+                struct.pack_into('<H', header, 12, 32)
+                struct.pack_into('<I', header, 14, 1)
+                struct.pack_into('<H', header, 18, 100)
+                struct.pack_into('<H', header, 32, 16)
+
+                out_path = os.path.join(char_dir, f"{sname}.aseprite")
+                with open(out_path, "wb") as f:
+                    f.write(bytes(header) + frame_data)
+
+        print(f"  [{char_id:2d}] {name:20s}: {len(rendered):4d} frames")
+
+    print(f"\nDone! {total_frames} total frames → output/{game_id}/sprites/")
+
+
 def main():
     parser = argparse.ArgumentParser(description="Neo Geo sprite extractor")
     parser.add_argument("game", help="Game ID (e.g. kof95, kof94)")
@@ -288,9 +480,15 @@ def main():
     with open(config_path) as f:
         config = json.load(f)
 
-    extract_game(config, char_filter=args.char,
-                 do_aseprite=not args.no_aseprite,
-                 do_png=not args.no_png)
+    engine = config.get("engine", "kof95")
+    if engine == "kof96":
+        extract_kof96(config, char_filter=args.char,
+                      do_aseprite=not args.no_aseprite,
+                      do_png=not args.no_png)
+    else:
+        extract_game(config, char_filter=args.char,
+                     do_aseprite=not args.no_aseprite,
+                     do_png=not args.no_png)
 
 
 if __name__ == "__main__":

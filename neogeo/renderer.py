@@ -2,6 +2,9 @@
 
 Supports both RGBA rendering (for PNG atlases) and indexed rendering
 (for Aseprite indexed color mode).
+
+KOF96 adds render_kof96_sdef() which handles 2D bitmask grids with
+auto-orientation (b2 vs b3 determines transpose).
 """
 
 import numpy as np
@@ -204,3 +207,103 @@ def render_frame_indexed(spr_data, parts, scale=2):
     if not canvas.any():
         return None, -1
     return (canvas, part_map, body_idx)
+
+
+# ─── KOF96 rendering ──────────────────────────────────────────────
+
+def render_kof96_sdef(spr_data, sdef, palette):
+    """Render a KOF96 sdef to RGBA image.
+
+    The sdef bitmask grid always maps row→X (sprite column), col→Y (tile row).
+    This matches Neo Geo hardware convention where each bitmask row corresponds
+    to one hardware sprite column (vertical strip).
+    """
+    b2 = sdef["b2"]
+    b3 = sdef["b3"]
+    tiles = sdef["tiles"]
+
+    # Always: row → X (hardware sprite columns), col → Y (tile rows)
+    w = b2 * 16
+    h = b3 * 16
+
+    if w == 0 or h == 0:
+        return None
+
+    img = np.zeros((h, w, 4), dtype=np.uint8)
+
+    for row, col, tile_code in tiles:
+        if not tile_has_pixels(spr_data, tile_code):
+            continue
+        pixels = decode_tile(spr_data, tile_code)
+        x0 = row * 16
+        y0 = col * 16
+        for py in range(16):
+            for px in range(16):
+                ci = pixels[py, px]
+                if ci == 0:
+                    continue
+                r, g, b = palette[ci] if ci < len(palette) else (255, 255, 255)
+                yy = y0 + py
+                xx = x0 + px
+                if 0 <= yy < h and 0 <= xx < w:
+                    img[yy, xx] = [r, g, b, 255]
+
+    if not img[:, :, 3].any():
+        return None
+    return img
+
+
+def render_kof96_frame(spr_data, parts, body_pal, acc_pal=None, scale=2, return_origin=False):
+    """Render a KOF96 composite frame from body + accessory parts.
+
+    parts: list of (frag_y, frag_x, sdef) from fragment records.
+    Uses swapXY: canvas_x = frag_y, canvas_y = frag_x.
+    """
+    if acc_pal is None:
+        acc_pal = body_pal
+
+    # Body = first part (index 0), accessory = rest
+    rendered_parts = []
+    for pi, (frag_y, frag_x, sdef) in enumerate(parts):
+        pal = body_pal if pi == 0 else acc_pal
+        img = render_kof96_sdef(spr_data, sdef, pal)
+        if img is not None:
+            # swapXY: canvas_x = frag_y, canvas_y = frag_x
+            rendered_parts.append((frag_y, frag_x, img))
+
+    if not rendered_parts:
+        return (None, 0, 0) if return_origin else None
+
+    min_cx = min(cy for cy, cx, _ in rendered_parts)
+    min_cy = min(cx for cy, cx, _ in rendered_parts)
+    max_cx = max(cy + img.shape[1] for cy, cx, img in rendered_parts)
+    max_cy = max(cx + img.shape[0] for cy, cx, img in rendered_parts)
+
+    w = max_cx - min_cx
+    h = max_cy - min_cy
+    if w <= 0 or h <= 0 or w > 512 or h > 512:
+        return (None, 0, 0) if return_origin else None
+
+    origin_x = (-min_cx) * scale
+    origin_y = (-min_cy) * scale
+
+    canvas = np.zeros((h * scale, w * scale, 4), dtype=np.uint8)
+    for cy, cx, part_img in rendered_parts:
+        px_off = (cy - min_cx) * scale
+        py_off = (cx - min_cy) * scale
+        ph, pw = part_img.shape[:2]
+        for sy in range(ph):
+            for sx in range(pw):
+                if part_img[sy, sx, 3] > 0:
+                    for ds in range(scale):
+                        for dr in range(scale):
+                            ty = py_off + sy * scale + ds
+                            tx = px_off + sx * scale + dr
+                            if 0 <= ty < h * scale and 0 <= tx < w * scale:
+                                canvas[ty, tx] = part_img[sy, sx]
+
+    if not canvas[:, :, 3].any():
+        return (None, 0, 0) if return_origin else None
+    if return_origin:
+        return canvas, origin_x, origin_y
+    return canvas
