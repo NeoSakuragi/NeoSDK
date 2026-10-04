@@ -172,30 +172,30 @@
       "char_id": 12,
       "name": "Kim Kaphwan",
       "palettes": {
-        "v0_body": "0x1C0400",
-        "v1_acc": "0x1C0420",
-        "v16_body": "0x1C0600",
-        "v17_acc": "0x1C0620"
+        "v0_body": "0x1DC000",
+        "v1_acc": "0x1DC020",
+        "v16_body": "0x1DC200",
+        "v17_acc": "0x1DC220"
       }
     },
     {
       "char_id": 13,
       "name": "Chang Koehan",
       "palettes": {
-        "v0_body": "0x1C0800",
-        "v1_acc": "0x1C0820",
-        "v16_body": "0x1C0A00",
-        "v17_acc": "0x1C0A20"
+        "v0_body": "0x1DC400",
+        "v1_acc": "0x1DC420",
+        "v16_body": "0x1DC600",
+        "v17_acc": "0x1DC620"
       }
     },
     {
       "char_id": 14,
       "name": "Choi Bounge",
       "palettes": {
-        "v0_body": "0x1C0C00",
-        "v1_acc": "0x1C0C20",
-        "v16_body": "0x1C0E00",
-        "v17_acc": "0x1C0E20"
+        "v0_body": "0x1DC800",
+        "v1_acc": "0x1DC820",
+        "v16_body": "0x1DCA00",
+        "v17_acc": "0x1DCA20"
       }
     },
     {
@@ -300,16 +300,6 @@
     },
     {
       "char_id": 25,
-      "name": "Rugal Bernstein",
-      "palettes": {
-        "v0_body": "0x1DF400",
-        "v1_acc": "0x1DF420",
-        "v16_body": "0x1DF600",
-        "v17_acc": "0x1DF620"
-      }
-    },
-    {
-      "char_id": 26,
       "name": "Omega Rugal",
       "palettes": {
         "v0_body": "0x1DF400",
@@ -319,8 +309,18 @@
       }
     },
     {
+      "char_id": 26,
+      "name": "(effects: projectile sprites, not a fighter)",
+      "palettes": {
+        "v0_body": "0x1DF800",
+        "v1_acc": "0x1DF820",
+        "v16_body": "0x1DFA00",
+        "v17_acc": "0x1DFA20"
+      }
+    },
+    {
       "char_id": 27,
-      "name": "Nakoruru",
+      "name": "(effects, not a fighter)",
       "palettes": {
         "v0_body": "0x1D9C00",
         "v1_acc": "0x1D9C20",
@@ -330,7 +330,7 @@
     },
     {
       "char_id": 28,
-      "name": "Edit Team 1",
+      "name": "(effects, not a fighter)",
       "palettes": {
         "v0_body": "0x1DA800",
         "v1_acc": "0x1DA820",
@@ -340,7 +340,7 @@
     },
     {
       "char_id": 29,
-      "name": "Edit Team 2",
+      "name": "(effects, not a fighter)",
       "palettes": {
         "v0_body": "0x1DA800",
         "v1_acc": "0x1DA820",
